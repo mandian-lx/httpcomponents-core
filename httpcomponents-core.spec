@@ -1,24 +1,29 @@
+%{?_javapackages_macros:%_javapackages_macros}
+%global base_name httpcomponents
+
 Name:              httpcomponents-core
 Summary:           Set of low level Java HTTP transport components for HTTP services
-Version:           4.1
-Release:           5
-Group:             Development/Java
-License:           ASL 2.0
+Version:           4.2.4
+Release:           5.1%{?dist}
+
+# The project is licensed under ASL 2.0, but it contains annotations
+# in the package org.apache.http.annotation which are derived
+# from JCIP-ANNOTATIONS project (CC-BY licensed)
+License:           ASL 2.0 and CC-BY
 URL:               http://hc.apache.org/
 Source0:           http://www.apache.org/dist/httpcomponents/httpcore/source/httpcomponents-core-%{version}-src.tar.gz
-Patch0:            0001-Remove-unneeded-pom-dependencies.patch
 BuildArch:         noarch
 
+BuildRequires:     maven-local
 BuildRequires:     httpcomponents-project
-BuildRequires:     java >= 0:1.6.0
+BuildRequires:     java >= 1:1.6.0
 BuildRequires:     jpackage-utils
 BuildRequires:     maven-surefire-provider-junit4
-
-Requires:          java >= 0:1.6.0
-Requires:          jpackage-utils
-
-Requires(post):    jpackage-utils
-Requires(postun):  jpackage-utils
+BuildRequires:     apache-commons-logging
+BuildRequires:     junit
+%if 0%{?rhel} <= 0
+BuildRequires:     mockito
+%endif
 
 %description
 HttpCore is a set of low level HTTP transport components that can be
@@ -35,8 +40,7 @@ HTTP connections in a resource efficient manner.
 
 %package        javadoc
 Summary:        API documentation for %{name}
-Group:          Development/Java
-Requires:       jpackage-utils
+
 
 %description    javadoc
 %{summary}.
@@ -44,55 +48,145 @@ Requires:       jpackage-utils
 
 %prep
 %setup -q
-%patch0 -p1
 
-%build
-export maven_repo_local=$(pwd)/.m2/repository
-install -d $maven_repo_local
+%pom_remove_plugin :maven-clover2-plugin httpcore-nio
+%pom_remove_plugin :maven-clover2-plugin httpcore
+%pom_remove_plugin :maven-notice-plugin
+%pom_remove_plugin :docbkx-maven-plugin
 
-# start using install again when bundle plugin is updated to 2.1.0
-mvn-jpp -Dmaven.repo.local=$maven_repo_local \
-        package javadoc:aggregate
+# we don't need these artifacts right now
+%pom_disable_module httpcore-osgi
+%pom_disable_module httpcore-ab
 
-%install
-install -d %{buildroot}/%{_mavenpomdir}
-install -d %{buildroot}/%{_javadir}/%{name}
-
-for m in httpcore httpcore-nio httpcore-osgi; do
-    # poms
-    install -m 0644 $m/pom.xml %{buildroot}/%{_mavenpomdir}/JPP.%{name}-$m.pom
-
-    # jars - osgi doesn't have one
-    if [ -f $m/target/$m-%{version}.jar ];then
-        install -m 0644 $m/target/$m-%{version}.jar %{buildroot}%{_javadir}/%{name}/$m.jar
-    fi
-
-    %add_to_maven_depmap org.apache.httpcomponents $m %{version} JPP/%{name} $m
+# OSGify modules
+for module in httpcore httpcore-nio; do
+    %pom_xpath_remove "pom:project/pom:packaging" $module
+    %pom_xpath_inject "pom:project" "<packaging>bundle</packaging>" $module
+    %pom_xpath_inject "pom:build/pom:plugins" "
+        <plugin>
+          <groupId>org.apache.felix</groupId>
+          <artifactId>maven-bundle-plugin</artifactId>
+          <extensions>true</extensions>
+          <configuration>
+            <instructions>
+              <Export-Package>*</Export-Package>
+              <Private-Package></Private-Package>
+              <_nouses>true</_nouses>
+            </instructions>
+          </configuration>
+        </plugin>" $module
 done
 
-# parent
-install -D -m 0644 pom.xml %{buildroot}/%{_mavenpomdir}/JPP.%{name}-%{name}.pom
-%add_to_maven_depmap org.apache.httpcomponents %{name} %{version} JPP/%{name} %{name}
+# install JARs to httpcomponents/ for compatibility reasons
+# several other packages expect to find the JARs there
+%mvn_file ":{*}" httpcomponents/@1
 
-# javadocs
-install -dm 755 %{buildroot}%{_javadocdir}/%{name}
-cp -pr target/site/api*/* %{buildroot}%{_javadocdir}/%{name}
+%build
+%mvn_build \
+%if 0%{?rhel}
+    -f
+%endif
 
-%post
-%update_maven_depmap
 
-%postun
-%update_maven_depmap
+%install
+%mvn_install
 
-%files
-%defattr(-,root,root,-)
-%doc README.txt LICENSE.txt RELEASE_NOTES.txt
-%{_mavendepmapfragdir}/%{name}
-%{_mavenpomdir}/JPP.%{name}*.pom
-%{_javadir}/%{name}
+%files -f .mfiles
+%dir %{_javadir}/httpcomponents
+%doc LICENSE.txt NOTICE.txt
+%doc README.txt RELEASE_NOTES.txt
 
-%files javadoc
-%doc LICENSE.txt
-%defattr(-,root,root,-)
-%doc %{_javadocdir}/*
+%files javadoc -f .mfiles-javadoc
+%doc LICENSE.txt NOTICE.txt
 
+%changelog
+* Sat Aug 03 2013 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 4.2.4-5
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_20_Mass_Rebuild
+
+* Mon Jun 10 2013 Michal Srb <msrb@redhat.com> - 4.2.4-4
+- Fix license tag (CC-BY added)
+
+* Fri May 17 2013 Alexander Kurtakov <akurtako@redhat.com> 4.2.4-3
+- Fix bundle plugin configuration to produce sane manifest.
+- Do not duplicate javadoc files list.
+
+* Mon Mar 25 2013 Michal Srb <msrb@redhat.com> - 4.2.4-2
+- Build with xmvn
+
+* Mon Mar 25 2013 Michal Srb <msrb@redhat.com> - 4.2.4-1
+- Update to upstream version 4.2.4
+
+* Mon Feb 25 2013 Mikolaj Izdebski <mizdebsk@redhat.com> - 4.2.3-3
+- Add missing BR: maven-local
+
+* Thu Feb 14 2013 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 4.2.3-2
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_19_Mass_Rebuild
+
+* Mon Dec  3 2012 Mikolaj Izdebski <mizdebsk@redhat.com> - 4.2.3-1
+- Update to upstream version 4.2.3
+
+* Fri Oct  5 2012 Mikolaj Izdebski <mizdebsk@redhat.com> - 4.2.2-1
+- Update to upstream version 4.2.2
+
+* Mon Aug 27 2012 Stanislav Ochotnicky <sochotnicky@redhat.com> - 4.2.1-3
+- Remove mockito from Requires (not needed really)
+- BR on mockito is now conditional on Fedora
+
+* Fri Jul 27 2012 Mikolaj Izdebski <mizdebsk@redhat.com> - 4.2.1-2
+- Install NOTICE.txt file
+- Fix javadir directory ownership
+- Preserve timestamps
+
+* Mon Jul 23 2012 Mikolaj Izdebski <mizdebsk@redhat.com> - 4.2.1-1
+- Update to upstream version 4.2.1
+- Convert patches to POM macros
+
+* Thu Jul 19 2012 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 4.1.4-2
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_18_Mass_Rebuild
+
+* Fri Mar 23 2012 Krzysztof Daniel <kdaniel@redhat.com> 4.1.4-1
+- Update to latest upstream (4.1.4)
+
+* Fri Jan 13 2012 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 4.1.3-2
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_17_Mass_Rebuild
+
+* Tue Aug 16 2011 Stanislav Ochotnicky <sochotnicky@redhat.com> - 4.1.3-1
+- Update to latest upstream (4.1.3)
+
+* Tue Jul 26 2011 Stanislav Ochotnicky <sochotnicky@redhat.com> - 4.1.2-1
+- Update to latest upstream (4.1.2)
+
+* Mon Jul  4 2011 Stanislav Ochotnicky <sochotnicky@redhat.com> - 4.1.1-2
+- Fix forgotten add_to_maven_depmap
+
+* Fri Jul  1 2011 Stanislav Ochotnicky <sochotnicky@redhat.com> - 4.1.1-1
+- Update to latest upstream (4.1.1)
+- Use new maven macros
+- Tweaks according to new guidelines
+- Enable tests again (seem to work OK even in koji now)
+
+* Tue Mar 15 2011 Severin Gehwolf <sgehwolf@redhat.com> 4.1-6
+- Explicitly set PrivatePackage to the empty set, so as to
+  export all packages.
+
+* Fri Mar 11 2011 Alexander Kurtakov <akurtako@redhat.com> 4.1-5
+- Bump release to fix my mistake with the release.
+
+* Thu Mar 10 2011 Alexander Kurtakov <akurtako@redhat.com> 4.1-3
+- Export all packages.
+
+* Fri Feb 18 2011 Alexander Kurtakov <akurtako@redhat.com> 4.1-2
+- Don't use basename it's part of coreutils.
+
+* Fri Feb 18 2011 Alexander Kurtakov <akurtako@redhat.com> 4.1-4
+- Install into %{_javadir}/httpcomponents. We will use it for client libs too.
+- Proper osgi info.
+
+* Wed Feb 09 2011 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 4.1-3
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_15_Mass_Rebuild
+
+* Wed Dec 22 2010 Stanislav Ochotnicky <sochotnicky@redhat.com> - 4.1-2
+- Added license to javadoc subpackage
+
+* Fri Dec 17 2010 Stanislav Ochotnicky <sochotnicky@redhat.com> - 4.1-1
+- Initial package
