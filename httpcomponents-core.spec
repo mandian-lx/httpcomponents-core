@@ -1,192 +1,58 @@
-%{?_javapackages_macros:%_javapackages_macros}
-%global base_name httpcomponents
 
-Name:              httpcomponents-core
-Summary:           Set of low level Java HTTP transport components for HTTP services
-Version:           4.2.4
-Release:           5.1%{?dist}
+%undefine _compress
+%undefine _extension
+%global _duplicate_files_terminate_build 0
+%global _files_listed_twice_terminate_build 0
+%global _unpackaged_files_terminate_build 0
+%global _nonzero_exit_pkgcheck_terminate_build 0
+%global _use_internal_dependency_generator 0
+%global __find_requires /bin/sed -e 's/.*//'
+%global __find_provides /bin/sed -e 's/.*//'
 
-# The project is licensed under ASL 2.0, but it contains annotations
-# in the package org.apache.http.annotation which are derived
-# from JCIP-ANNOTATIONS project (CC-BY licensed)
-License:           ASL 2.0 and CC-BY
-URL:               http://hc.apache.org/
-Source0:           http://www.apache.org/dist/httpcomponents/httpcore/source/httpcomponents-core-%{version}-src.tar.gz
-BuildArch:         noarch
+Name:		httpcomponents-core
+Version:	4.2.4
+Release:	5.1
+License:	GPLv3+
+Source0:	httpcomponents-core-4.2.4-5.1-omv2014.0.noarch.rpm
 
-BuildRequires:     maven-local
-BuildRequires:     httpcomponents-project
-BuildRequires:     java >= 1:1.6.0
-BuildRequires:     jpackage-utils
-BuildRequires:     maven-surefire-provider-junit4
-BuildRequires:     apache-commons-logging
-BuildRequires:     junit
-%if 0%{?rhel} <= 0
-BuildRequires:     mockito
-%endif
+URL:		https://abf.rosalinux.ru/openmandriva/httpcomponents-core
+BuildArch:	noarch
+Summary:	httpcomponents-core bootstrap version
+Requires:	javapackages-bootstrap
+Requires:	java >= 1.5
+Requires:	jpackage-utils
+Provides:	httpcomponents-core = 4.2.4-5.1:2014.0
+Provides:	mvn(org.apache.httpcomponents:httpcomponents-core) = 4.2.4
+Provides:	mvn(org.apache.httpcomponents:httpcomponents-core:pom:) = 4.2.4
+Provides:	mvn(org.apache.httpcomponents:httpcore) = 4.2.4
+Provides:	mvn(org.apache.httpcomponents:httpcore-nio) = 4.2.4
+Provides:	osgi(org.apache.httpcomponents.httpcore) = 4.2.4
+Provides:	osgi(org.apache.httpcomponents.httpcore-nio) = 4.2.4
 
 %description
-HttpCore is a set of low level HTTP transport components that can be
-used to build custom client and server side HTTP services with a
-minimal footprint. HttpCore supports two I/O models: blocking I/O
-model based on the classic Java I/O and non-blocking, event driven I/O
-model based on Java NIO.
+httpcomponents-core bootstrap version.
 
-The blocking I/O model may be more appropriate for data intensive, low
-latency scenarios, whereas the non-blocking model may be more
-appropriate for high latency scenarios where raw data throughput is
-less important than the ability to handle thousands of simultaneous
-HTTP connections in a resource efficient manner.
+%files
+/usr/share/doc/httpcomponents-core
+/usr/share/doc/httpcomponents-core/LICENSE.txt
+/usr/share/doc/httpcomponents-core/NOTICE.txt
+/usr/share/doc/httpcomponents-core/README.txt
+/usr/share/doc/httpcomponents-core/RELEASE_NOTES.txt
+/usr/share/java/httpcomponents
+/usr/share/java/httpcomponents/httpcore-nio.jar
+/usr/share/java/httpcomponents/httpcore.jar
+/usr/share/maven-effective-poms/JPP.httpcomponents-httpcore-nio.pom
+/usr/share/maven-effective-poms/JPP.httpcomponents-httpcore.pom
+/usr/share/maven-fragments/httpcomponents-core.xml
+/usr/share/maven-poms/JPP.httpcomponents-httpcomponents-core.pom
+/usr/share/maven-poms/JPP.httpcomponents-httpcore-nio.pom
+/usr/share/maven-poms/JPP.httpcomponents-httpcore.pom
 
-%package        javadoc
-Summary:        API documentation for %{name}
-
-
-%description    javadoc
-%{summary}.
-
-
+#------------------------------------------------------------------------
 %prep
-%setup -q
-
-%pom_remove_plugin :maven-clover2-plugin httpcore-nio
-%pom_remove_plugin :maven-clover2-plugin httpcore
-%pom_remove_plugin :maven-notice-plugin
-%pom_remove_plugin :docbkx-maven-plugin
-
-# we don't need these artifacts right now
-%pom_disable_module httpcore-osgi
-%pom_disable_module httpcore-ab
-
-# OSGify modules
-for module in httpcore httpcore-nio; do
-    %pom_xpath_remove "pom:project/pom:packaging" $module
-    %pom_xpath_inject "pom:project" "<packaging>bundle</packaging>" $module
-    %pom_xpath_inject "pom:build/pom:plugins" "
-        <plugin>
-          <groupId>org.apache.felix</groupId>
-          <artifactId>maven-bundle-plugin</artifactId>
-          <extensions>true</extensions>
-          <configuration>
-            <instructions>
-              <Export-Package>*</Export-Package>
-              <Private-Package></Private-Package>
-              <_nouses>true</_nouses>
-            </instructions>
-          </configuration>
-        </plugin>" $module
-done
-
-# install JARs to httpcomponents/ for compatibility reasons
-# several other packages expect to find the JARs there
-%mvn_file ":{*}" httpcomponents/@1
 
 %build
-%mvn_build \
-%if 0%{?rhel}
-    -f
-%endif
-
 
 %install
-%mvn_install
-
-%files -f .mfiles
-%dir %{_javadir}/httpcomponents
-%doc LICENSE.txt NOTICE.txt
-%doc README.txt RELEASE_NOTES.txt
-
-%files javadoc -f .mfiles-javadoc
-%doc LICENSE.txt NOTICE.txt
-
-%changelog
-* Sat Aug 03 2013 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 4.2.4-5
-- Rebuilt for https://fedoraproject.org/wiki/Fedora_20_Mass_Rebuild
-
-* Mon Jun 10 2013 Michal Srb <msrb@redhat.com> - 4.2.4-4
-- Fix license tag (CC-BY added)
-
-* Fri May 17 2013 Alexander Kurtakov <akurtako@redhat.com> 4.2.4-3
-- Fix bundle plugin configuration to produce sane manifest.
-- Do not duplicate javadoc files list.
-
-* Mon Mar 25 2013 Michal Srb <msrb@redhat.com> - 4.2.4-2
-- Build with xmvn
-
-* Mon Mar 25 2013 Michal Srb <msrb@redhat.com> - 4.2.4-1
-- Update to upstream version 4.2.4
-
-* Mon Feb 25 2013 Mikolaj Izdebski <mizdebsk@redhat.com> - 4.2.3-3
-- Add missing BR: maven-local
-
-* Thu Feb 14 2013 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 4.2.3-2
-- Rebuilt for https://fedoraproject.org/wiki/Fedora_19_Mass_Rebuild
-
-* Mon Dec  3 2012 Mikolaj Izdebski <mizdebsk@redhat.com> - 4.2.3-1
-- Update to upstream version 4.2.3
-
-* Fri Oct  5 2012 Mikolaj Izdebski <mizdebsk@redhat.com> - 4.2.2-1
-- Update to upstream version 4.2.2
-
-* Mon Aug 27 2012 Stanislav Ochotnicky <sochotnicky@redhat.com> - 4.2.1-3
-- Remove mockito from Requires (not needed really)
-- BR on mockito is now conditional on Fedora
-
-* Fri Jul 27 2012 Mikolaj Izdebski <mizdebsk@redhat.com> - 4.2.1-2
-- Install NOTICE.txt file
-- Fix javadir directory ownership
-- Preserve timestamps
-
-* Mon Jul 23 2012 Mikolaj Izdebski <mizdebsk@redhat.com> - 4.2.1-1
-- Update to upstream version 4.2.1
-- Convert patches to POM macros
-
-* Thu Jul 19 2012 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 4.1.4-2
-- Rebuilt for https://fedoraproject.org/wiki/Fedora_18_Mass_Rebuild
-
-* Fri Mar 23 2012 Krzysztof Daniel <kdaniel@redhat.com> 4.1.4-1
-- Update to latest upstream (4.1.4)
-
-* Fri Jan 13 2012 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 4.1.3-2
-- Rebuilt for https://fedoraproject.org/wiki/Fedora_17_Mass_Rebuild
-
-* Tue Aug 16 2011 Stanislav Ochotnicky <sochotnicky@redhat.com> - 4.1.3-1
-- Update to latest upstream (4.1.3)
-
-* Tue Jul 26 2011 Stanislav Ochotnicky <sochotnicky@redhat.com> - 4.1.2-1
-- Update to latest upstream (4.1.2)
-
-* Mon Jul  4 2011 Stanislav Ochotnicky <sochotnicky@redhat.com> - 4.1.1-2
-- Fix forgotten add_to_maven_depmap
-
-* Fri Jul  1 2011 Stanislav Ochotnicky <sochotnicky@redhat.com> - 4.1.1-1
-- Update to latest upstream (4.1.1)
-- Use new maven macros
-- Tweaks according to new guidelines
-- Enable tests again (seem to work OK even in koji now)
-
-* Tue Mar 15 2011 Severin Gehwolf <sgehwolf@redhat.com> 4.1-6
-- Explicitly set PrivatePackage to the empty set, so as to
-  export all packages.
-
-* Fri Mar 11 2011 Alexander Kurtakov <akurtako@redhat.com> 4.1-5
-- Bump release to fix my mistake with the release.
-
-* Thu Mar 10 2011 Alexander Kurtakov <akurtako@redhat.com> 4.1-3
-- Export all packages.
-
-* Fri Feb 18 2011 Alexander Kurtakov <akurtako@redhat.com> 4.1-2
-- Don't use basename it's part of coreutils.
-
-* Fri Feb 18 2011 Alexander Kurtakov <akurtako@redhat.com> 4.1-4
-- Install into %{_javadir}/httpcomponents. We will use it for client libs too.
-- Proper osgi info.
-
-* Wed Feb 09 2011 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 4.1-3
-- Rebuilt for https://fedoraproject.org/wiki/Fedora_15_Mass_Rebuild
-
-* Wed Dec 22 2010 Stanislav Ochotnicky <sochotnicky@redhat.com> - 4.1-2
-- Added license to javadoc subpackage
-
-* Fri Dec 17 2010 Stanislav Ochotnicky <sochotnicky@redhat.com> - 4.1-1
-- Initial package
+cd %{buildroot}
+rpm2cpio %{SOURCE0} | cpio -id
