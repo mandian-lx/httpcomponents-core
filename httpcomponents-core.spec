@@ -3,9 +3,8 @@
 
 Name:              httpcomponents-core
 Summary:           Set of low level Java HTTP transport components for HTTP services
-Version:           4.2.4
-Release:           5.1%{?dist}
-
+Version:           4.3.2
+Release:           3%{?dist}
 # The project is licensed under ASL 2.0, but it contains annotations
 # in the package org.apache.http.annotation which are derived
 # from JCIP-ANNOTATIONS project (CC-BY licensed)
@@ -18,10 +17,10 @@ BuildRequires:     maven-local
 BuildRequires:     httpcomponents-project
 BuildRequires:     java >= 1:1.6.0
 BuildRequires:     jpackage-utils
-BuildRequires:     maven-surefire-provider-junit4
 BuildRequires:     apache-commons-logging
 BuildRequires:     junit
-%if 0%{?rhel} <= 0
+BuildRequires:     mvn(org.codehaus.mojo:build-helper-maven-plugin)
+%if 0%{?fedora}
 BuildRequires:     mockito
 %endif
 
@@ -41,7 +40,6 @@ HTTP connections in a resource efficient manner.
 %package        javadoc
 Summary:        API documentation for %{name}
 
-
 %description    javadoc
 %{summary}.
 
@@ -49,10 +47,7 @@ Summary:        API documentation for %{name}
 %prep
 %setup -q
 
-%pom_remove_plugin :maven-clover2-plugin httpcore-nio
-%pom_remove_plugin :maven-clover2-plugin httpcore
-%pom_remove_plugin :maven-notice-plugin
-%pom_remove_plugin :docbkx-maven-plugin
+%pom_remove_plugin :maven-checkstyle-plugin
 
 # we don't need these artifacts right now
 %pom_disable_module httpcore-osgi
@@ -82,24 +77,31 @@ done
 %mvn_file ":{*}" httpcomponents/@1
 
 %build
-%mvn_build \
-%if 0%{?rhel}
-    -f
-%endif
-
+%mvn_build %{!?fedora -f}
 
 %install
 %mvn_install
 
 %files -f .mfiles
 %dir %{_javadir}/httpcomponents
-%doc LICENSE.txt NOTICE.txt
-%doc README.txt RELEASE_NOTES.txt
+%doc LICENSE.txt NOTICE.txt README.txt RELEASE_NOTES.txt
 
 %files javadoc -f .mfiles-javadoc
 %doc LICENSE.txt NOTICE.txt
 
 %changelog
+* Sat Jun 07 2014 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 4.3.2-3
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_21_Mass_Rebuild
+
+* Mon May 26 2014 Mikolaj Izdebski <mizdebsk@redhat.com> - 4.3.2-2
+- Remove BuildRequires on maven-surefire-provider-junit4
+
+* Mon May 12 2014 Mikolaj Izdebski <mizdebsk@redhat.com> - 4.3.2-1
+- Update to upstream version 4.3.2
+
+* Tue Sep 03 2013 Michal Srb <msrb@redhat.com> - 4.3-1
+- Update to upstream version 4.3
+
 * Sat Aug 03 2013 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 4.2.4-5
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_20_Mass_Rebuild
 
@@ -190,3 +192,4 @@ done
 
 * Fri Dec 17 2010 Stanislav Ochotnicky <sochotnicky@redhat.com> - 4.1-1
 - Initial package
+
