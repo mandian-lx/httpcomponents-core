@@ -4,7 +4,8 @@
 Name:              httpcomponents-core
 Summary:           Set of low level Java HTTP transport components for HTTP services
 Version:           4.3.2
-Release:           3%{?dist}
+Release:           3.2
+Group:		   Development/Java
 # The project is licensed under ASL 2.0, but it contains annotations
 # in the package org.apache.http.annotation which are derived
 # from JCIP-ANNOTATIONS project (CC-BY licensed)
@@ -77,7 +78,7 @@ done
 %mvn_file ":{*}" httpcomponents/@1
 
 %build
-%mvn_build %{!?fedora -f}
+%mvn_build -f
 
 %install
 %mvn_install
