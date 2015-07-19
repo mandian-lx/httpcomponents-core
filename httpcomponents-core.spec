@@ -4,7 +4,7 @@
 Name:              httpcomponents-core
 Summary:           Set of low level Java HTTP transport components for HTTP services
 Version:           4.3.2
-Release:           3.2
+Release:           3.3
 Group:		   Development/Java
 # The project is licensed under ASL 2.0, but it contains annotations
 # in the package org.apache.http.annotation which are derived
