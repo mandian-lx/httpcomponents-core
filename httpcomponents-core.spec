@@ -1,29 +1,25 @@
-%{?_javapackages_macros:%_javapackages_macros}
-%global base_name httpcomponents
+%define bname httpcomponents
+%define module core
 
-Name:              httpcomponents-core
-Summary:           Set of low level Java HTTP transport components for HTTP services
-Version:           4.3.2
-Release:           3.3
-Group:		   Development/Java
-# The project is licensed under ASL 2.0, but it contains annotations
-# in the package org.apache.http.annotation which are derived
-# from JCIP-ANNOTATIONS project (CC-BY licensed)
-License:           ASL 2.0 and CC-BY
-URL:               http://hc.apache.org/
-Source0:           http://www.apache.org/dist/httpcomponents/httpcore/source/httpcomponents-core-%{version}-src.tar.gz
-BuildArch:         noarch
+Summary:	A set of low level Java HTTP transport components for HTTP services
+Name:		%{bname}-%{module}
+Version:	4.4.6
+Release:	1
+License:	ASL 2.0
+Group:		Development/Java
+URL:		https://hc.apache.org/
+Source0:	https://www.apache.org/dist/%{bname}/http%{module}/source/%{name}-%{version}-src.tar.gz
+BuildArch:	noarch
 
-BuildRequires:     maven-local
-BuildRequires:     httpcomponents-project
-BuildRequires:     java >= 1:1.6.0
-BuildRequires:     jpackage-utils
-BuildRequires:     apache-commons-logging
-BuildRequires:     junit
-BuildRequires:     mvn(org.codehaus.mojo:build-helper-maven-plugin)
-%if 0%{?fedora}
-BuildRequires:     mockito
-%endif
+BuildRequires:  maven-local
+BuildRequires:  mvn(commons-logging:commons-logging)
+BuildRequires:  mvn(junit:junit)
+BuildRequires:  mvn(org.apache.felix:maven-bundle-plugin)
+BuildRequires:  httpcomponents-project #mvn(org.apache.httpcomponents:project:pom:)
+BuildRequires:  mvn(org.apache.maven.plugins:maven-source-plugin)
+BuildRequires:  mvn(org.apache.rat:apache-rat-plugin)
+BuildRequires:  mvn(org.codehaus.mojo:build-helper-maven-plugin)
+BuildRequires:  mvn(org.mockito:mockito-core)
 
 %description
 HttpCore is a set of low level HTTP transport components that can be
@@ -37,18 +33,32 @@ latency scenarios, whereas the non-blocking model may be more
 appropriate for high latency scenarios where raw data throughput is
 less important than the ability to handle thousands of simultaneous
 HTTP connections in a resource efficient manner.
+%files -f .mfiles
+%dir %{_javadir}/%{bname}
+%doc README.txt
+%doc RELEASE_NOTES.txt
+%doc NOTICE.txt
+%doc LICENSE.txt
 
-%package        javadoc
-Summary:        API documentation for %{name}
+#----------------------------------------------------------------------------
 
-%description    javadoc
-%{summary}.
+%package javadoc
+Summary:	Javadoc for %{name}
 
+%description javadoc
+API documentation for %{name}.
+
+%files javadoc -f .mfiles-javadoc
+%doc NOTICE.txt
+%doc LICENSE.txt
+
+#----------------------------------------------------------------------------
 
 %prep
 %setup -q
 
 %pom_remove_plugin :maven-checkstyle-plugin
+%pom_remove_plugin :apache-rat-plugin
 
 # we don't need these artifacts right now
 %pom_disable_module httpcore-osgi
@@ -78,19 +88,45 @@ done
 %mvn_file ":{*}" httpcomponents/@1
 
 %build
-%mvn_build -f
+%mvn_build
 
 %install
 %mvn_install
 
-%files -f .mfiles
-%dir %{_javadir}/httpcomponents
-%doc LICENSE.txt NOTICE.txt README.txt RELEASE_NOTES.txt
-
-%files javadoc -f .mfiles-javadoc
-%doc LICENSE.txt NOTICE.txt
-
 %changelog
+* Thu Jan 12 2017 Michael Simacek <msimacek@redhat.com> - 4.4.6-1
+- Update to upstream version 4.4.6
+
+* Fri Jun 24 2016 Michael Simacek <msimacek@redhat.com> - 4.4.5-2
+- Change license to just ASL 2.0
+
+* Thu Jun 23 2016 Michael Simacek <msimacek@redhat.com> - 4.4.5-1
+- Update to upstream version 4.4.5
+
+* Wed Jun 15 2016 Mikolaj Izdebski <mizdebsk@redhat.com> - 4.4.4-3
+- Regenerate build-requires
+
+* Wed Feb 03 2016 Fedora Release Engineering <releng@fedoraproject.org> - 4.4.4-2
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_24_Mass_Rebuild
+
+* Mon Nov  2 2015 Mikolaj Izdebski <mizdebsk@redhat.com> - 4.4.4-1
+- Update to upstream version 4.4.4
+
+* Wed Sep  9 2015 Mikolaj Izdebski <mizdebsk@redhat.com> - 4.4.3-1
+- Update to upstream version 4.4.3
+
+* Mon Sep 07 2015 Michael Simacek <msimacek@redhat.com> - 4.4.2-1
+- Update to upstream version 4.4.2
+
+* Wed Jun 17 2015 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 4.4.1-2
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_23_Mass_Rebuild
+
+* Thu Mar 19 2015 Mikolaj Izdebski <mizdebsk@redhat.com> - 4.4.1-1
+- Update to upstream version 4.4.1
+
+* Mon Jan 19 2015 Mikolaj Izdebski <mizdebsk@redhat.com> - 4.4-1
+- Update to upstream version 4.4
+
 * Sat Jun 07 2014 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 4.3.2-3
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_21_Mass_Rebuild
 
@@ -193,4 +229,3 @@ done
 
 * Fri Dec 17 2010 Stanislav Ochotnicky <sochotnicky@redhat.com> - 4.1-1
 - Initial package
-
