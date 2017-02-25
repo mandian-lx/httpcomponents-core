@@ -17,7 +17,7 @@ BuildRequires:  maven-local
 BuildRequires:  mvn(commons-logging:commons-logging)
 BuildRequires:  mvn(junit:junit)
 BuildRequires:  mvn(org.apache.felix:maven-bundle-plugin)
-BuildRequires:  httpcomponents-project #mvn(org.apache.httpcomponents:project:pom:)
+BuildRequires:  mvn(org.apache.httpcomponents:project:pom:)
 BuildRequires:  mvn(org.apache.maven.plugins:maven-site-plugin)
 BuildRequires:  mvn(org.apache.maven.plugins:maven-source-plugin)
 BuildRequires:  mvn(org.apache.rat:apache-rat-plugin)
